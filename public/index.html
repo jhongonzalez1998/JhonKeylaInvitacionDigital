@@ -33,6 +33,14 @@ html{scroll-snap-type:y mandatory;scroll-padding:0}body{overflow-x:hidden}main{d
 /* Full-height artwork with text in its open spaces. */
 :root{--paper:#f7f5ee}body,main,.screen{background-color:var(--paper)}.inside,.venue-screen,.program{background-image:none}.cover.opening{background-color:transparent}.welcome-bridge,.dress{padding:0;background:var(--paper)}.countdown-panel{background-image:url('/assets/fondocuentaregresiva.jpeg')}.countdown-date{position:absolute;top:6%;left:10%;width:80%;text-align:center}.countdown-date .wedding-date{font-size:clamp(20px,5vw,27px);line-height:1.5;margin:0}.countdown-bottom{position:absolute;bottom:5%;left:10%;width:80%;text-align:center}.countdown-bottom .countdown{max-width:420px}.countdown-bottom .countdown span{font-size:clamp(32px,8vw,46px)}.countdown-bottom .compact-calendar{margin-top:16px}.countdown-bottom .compact-calendar p{margin-bottom:6px}.dress-panel{background-image:url('/assets/fondodresscode.jpeg')}.dress-panel>h2{position:absolute;top:5%;left:10%;width:80%;margin:0;font-size:28px;letter-spacing:.08em}.dress-bottom{position:absolute;bottom:8%;left:12%;width:76%;text-align:center}.dress-bottom .dress-description,.dress-bottom .dress-note{font-size:17px;line-height:1.6;margin:0 auto 18px}.dress-bottom .inspiration-wrap{margin-top:20px}.dress-bottom .btn{background:#faf9f0d9}@media(max-width:380px){.dress-bottom .dress-description,.dress-bottom .dress-note{font-size:16px}.countdown-date .wedding-date{font-size:19px}}
 .dress-formality{font-size:23px;font-weight:normal;letter-spacing:.06em;line-height:1.3;color:#000;margin:0 0 14px}.dress-bottom{bottom:6%}</style>
+<style>
+/* Stable viewport sizing and clipping prevent artwork/text spilling into a neighbour. */
+.screen{min-height:100svh;isolation:isolate;overflow:hidden}
+.scenes-ready .screen:not(.cover):not(.scene-active)>*{visibility:hidden;pointer-events:none}
+.scenes-ready .wedding-date{opacity:0;transform:translateY(18px);transition:opacity .65s ease,transform .65s ease}
+.scenes-ready .scene-active .wedding-date{opacity:1;transform:none}
+@media(prefers-reduced-motion:reduce){.scenes-ready .wedding-date{transform:none;transition:none}}
+</style>
 <meta property="og:type" content="website">
 <meta property="og:locale" content="es_EC">
 <meta property="og:site_name" content="Jhon &amp; Keyla">
@@ -115,6 +123,19 @@ if('IntersectionObserver' in window && !reducedMotion.matches){
  reducedMotion.addEventListener('change',event=>{if(event.matches)document.body.classList.remove('motion-ready')});
 }
 
+// Keep adjacent scenes hidden until their section reaches the viewport center.
+const scenes=[...document.querySelectorAll('main > .screen:not(.cover)')];
+let sceneFrame=0;
+function activateScene(){
+ sceneFrame=0;
+ const middle=document.documentElement.clientHeight/2;
+ const active=scenes.find(scene=>{const rect=scene.getBoundingClientRect();return rect.top<=middle&&rect.bottom>middle});
+ for(const scene of scenes){const selected=scene===active;scene.classList.toggle('scene-active',selected);scene.inert=!selected;}
+}
+function scheduleScene(){if(!sceneFrame)sceneFrame=requestAnimationFrame(activateScene);}
+activateScene();document.body.classList.add('scenes-ready');
+addEventListener('scroll',scheduleScene,{passive:true});addEventListener('resize',scheduleScene);
+
 const rsvpForm=document.getElementById('rsvpForm');
 const guestLabel=document.getElementById('guestName');
 const capacity=guestLabel.hidden?1:Number(personalizedPath[2]);
@@ -122,10 +143,39 @@ if(!guestLabel.hidden){rsvpForm.elements.name.value=guestLabel.textContent;rsvpF
 for(let n=1;n<=capacity;n++){const option=document.createElement('option');option.value=n;option.textContent=n+(n===1?' persona':' personas');rsvpForm.elements.count.append(option);}
 document.getElementById('rsvpOpen').onclick=()=>document.getElementById('rsvpDialog').showModal();
 rsvpForm.elements.attending.onchange=()=>{document.getElementById('countLabel').hidden=rsvpForm.elements.attending.value==='No'};
-rsvpForm.onsubmit=async event=>{event.preventDefault();const button=rsvpForm.querySelector('[type=submit]');const status=document.getElementById('rsvpStatus');button.disabled=true;status.textContent='Guardando tu respuesta…';try{
-let id;try{id=localStorage.getItem('wedding-rsvp-id');if(!id){id=crypto.randomUUID();localStorage.setItem('wedding-rsvp-id',id)}}catch{id=crypto.randomUUID()}
-const response=await fetch('/api/rsvp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,path:location.pathname,name:rsvpForm.elements.name.value,attending:rsvpForm.elements.attending.value,count:rsvpForm.elements.attending.value==='No'?0:Number(rsvpForm.elements.count.value),message:rsvpForm.elements.message.value})});const result=await response.json();if(!response.ok||!result.ok)throw Error();status.textContent='¡Gracias! Tu respuesta ha sido guardada.';
-}catch{status.textContent='No se pudo guardar. Por favor, intenta de nuevo.'}finally{button.disabled=false}};
+let responseId;
+function getResponseId(){
+ if(responseId)return responseId;
+ try{responseId=localStorage.getItem('wedding-rsvp-id');}catch{}
+ if(!responseId)responseId=crypto.randomUUID();
+ try{localStorage.setItem('wedding-rsvp-id',responseId);}catch{}
+ return responseId;
+}
+rsvpForm.onsubmit=async event=>{
+ event.preventDefault();const button=rsvpForm.querySelector('[type=submit]');
+ if(button.disabled)return;
+ const status=document.getElementById('rsvpStatus');button.disabled=true;
+ status.textContent='Guardando tu respuesta…';
+ try{
+  // Reuse the exact payload and ID: Apps Script updates the existing row on retry.
+  const payload=JSON.stringify({id:getResponseId(),path:location.pathname,name:rsvpForm.elements.name.value,attending:rsvpForm.elements.attending.value,count:rsvpForm.elements.attending.value==='No'?0:Number(rsvpForm.elements.count.value),message:rsvpForm.elements.message.value});
+  for(let attempt=0;attempt<2;attempt++){
+   try{
+    const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),55000);
+    let response,result;
+    try{response=await fetch('/api/rsvp',{method:'POST',headers:{'Content-Type':'application/json'},body:payload,signal:controller.signal});result=await response.json();}finally{clearTimeout(timeout);}
+    if(response.ok&&result.ok===true){status.textContent='¡Gracias! Tu respuesta ha sido guardada.';return;}
+    if(response.status>=400&&response.status<500){status.textContent='Revisa los datos e intenta enviar tu respuesta nuevamente.';return;}
+    throw new Error('No confirmation received');
+   }catch(error){
+    if(attempt===1)throw error;
+    status.textContent='Estamos confirmando tu respuesta. Espera un momento…';
+    await new Promise(resolve=>setTimeout(resolve,1200));
+   }
+  }
+ }catch{status.textContent='No pudimos confirmar el guardado por un problema de conexión. Tu respuesta puede haberse guardado. Pulsa enviar nuevamente para confirmarla; se actualizará la misma respuesta.';}
+ finally{button.disabled=false;}
+};
 
 const weddingTime=Date.parse('2026-11-07T17:00:00-05:00');
 function countdownParts(now){const total=Math.max(0,Math.floor((weddingTime-now)/1000));return {days:Math.floor(total/86400),hours:Math.floor(total%86400/3600),minutes:Math.floor(total%3600/60)};}

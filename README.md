@@ -1,25 +1,52 @@
-# Invitación Jhon & Keyla — Vercel
+# Jhon & Keyla — Digital Wedding Invitation
 
-1. Descomprime el ZIP. Crea un repositorio privado en GitHub.
-2. Sube el CONTENIDO de esta carpeta, no el ZIP ni una carpeta contenedora adicional. En la raíz deben aparecer api/, lib/, public/, package.json y vercel.json.
-3. En Vercel: Add New → Project → importa ese repositorio. Framework Preset: Other. Root Directory: ./ (raíz). La salida public está definida en vercel.json. No configures un comando de inicio ni de compilación.
-4. Antes de Deploy, agrega estas Environment Variables para Production y Preview:
-   - RSVP_URL: la dirección /exec de tu Google Apps Script (copiada también en .env.example).
-   - RSVP_KEY: el texto entre comillas de CONNECTION_KEY en tu Google Apps Script, sin las comillas. No es el ID de la hoja. No subas esta clave a GitHub ni uses un nombre NEXT_PUBLIC_ o VITE_.
-5. Pulsa Deploy. Las variables se aplican al nuevo despliegue; si las agregas después, vuelve a desplegar.
-6. Abre la dirección de Vercel. Toca el sello o Abrir invitación: comprueba música, mapa y formulario. Envía una respuesta de prueba y revisa tu hoja de Google Sheets antes de compartir la invitación.
+Responsive digital wedding invitation created with HTML, CSS and vanilla JavaScript.
 
-## Enlaces personalizados
-General: https://TU-DOMINIO.vercel.app/
-Familia y cupo: https://TU-DOMINIO.vercel.app/familia-gonzalez-alvarado/admision/4
-Reemplaza el nombre con palabras separadas por guiones y el 4 por el cupo. La invitación general admite una persona. El cupo está en el enlace y es modificable; no se trata de invitaciones firmadas.
+The project combines visual design and web development to present the event information in an interactive and mobile-friendly experience.
 
-## Contenido
-public/: página, imágenes originales y música. api/rsvp.js y lib/rsvp.mjs: confirmación en Google Sheets. vercel.json: configuración de alojamiento y enlaces. No se incluye ninguna clave privada.
+## Live demo
 
-La conexión de Apps Script debe seguir activa y tener la misma CONNECTION_KEY. No necesitas cambiar su código ni crear otra hoja.
+[Open the invitation](https://invitaciondigital-omega.vercel.app)
 
-## Alcance de la revisión
-El código del adaptador y los archivos se comprobaron localmente. La publicación en tu cuenta de Vercel y la prueba final en ese dominio siguen pendientes.
+## Features
 
-Documentación: https://vercel.com/docs/functions/runtimes/node-js
+- Wedding event information
+- Event itinerary
+- Location section with Google Maps link
+- RSVP section
+- Bank account information for gifts
+- Background music interaction
+- Responsive layout for mobile and desktop screens
+- Custom typography using Google Fonts
+
+## Built with
+
+- HTML5
+- CSS3
+- JavaScript
+- Google Fonts
+- Vercel
+
+## Run locally
+
+1. Clone the repository:
+
+   ```bash
+   git clone https://github.com/jhongonzalez1998/JhonKeylaInvitacionDigital.git
+   ```
+
+2. Open the project folder.
+3. Open `index.html` in a browser, or serve it with a local development server.
+
+## What I practiced
+
+- Creating a visual interface from a real client-style requirement
+- Building responsive layouts without a framework
+- Organizing content for a clear user experience
+- Deploying a static website to Vercel
+
+## Possible improvements
+
+- Connect RSVP submissions to a database or Google Sheets endpoint.
+- Add form validation and confirmation feedback.
+- Add automated tests for the RSVP flow.

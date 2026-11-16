@@ -6,7 +6,7 @@ The project combines visual design and web development to present the event info
 
 ## Live demo
 
-[Open the invitation](https://invitaciondigital-omega.vercel.app)
+[Open the invitation](https://invitaciondigital-jhonykeyla.vercel.app/)
 
 ## Features
 
